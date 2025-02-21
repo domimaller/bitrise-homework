@@ -1,7 +1,0 @@
-create:
-
-curl --request POST --data '{"command": "echo hello && sleep 10"}' -H 'Content-Type: application/json' http://localhost:8080/tasks
-
-get:
-
-curl http://localhost:8080/tasks/id

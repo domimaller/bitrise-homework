@@ -56,6 +56,7 @@ func (s *Server) initDB() {
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
+	db.AutoMigrate(&TaskData{})
 	log.Info("Postgres connection successful")
 	s.db = db
 }
