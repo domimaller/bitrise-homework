@@ -17,6 +17,7 @@ func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id parameter is missing", http.StatusBadRequest)
 		return
 	}
+	log.Infof("Getting a task with id %s", idStr)
 
 	taskID, err := uuid.Parse(idStr)
 	if err != nil {

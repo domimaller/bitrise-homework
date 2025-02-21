@@ -43,3 +43,12 @@ func (d *TaskData) toTask() Task {
 		ExitCode:   d.ExitCode,
 	}
 }
+
+func (d *TaskData) finish(u TaskResult) {
+	now := time.Now()
+	d.FinishedAt = &now
+	d.Status = u.Status
+	d.Stdout = u.Stdout
+	d.Stderr = u.Stderr
+	d.ExitCode = u.ExitCode
+}

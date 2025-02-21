@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	loggo "log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Server struct {
@@ -36,16 +38,25 @@ func (s *Server) setRoutes() {
 	s.router.HandleFunc("/tasks", s.handleListTasks).Methods(http.MethodGet)
 	s.router.HandleFunc("/tasks/pick", s.handlePickTask).Methods(http.MethodGet)
 	s.router.HandleFunc("/tasks/{id}", s.handleGetTask).Methods(http.MethodGet)
+	s.router.HandleFunc("/tasks/{id}/finish", s.handleFinishTask).Methods(http.MethodPost)
 }
 
 func (s *Server) initDB() {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		s.cfg.DBHost, s.cfg.DBPort, s.cfg.DBUser, s.cfg.DBPassword, s.cfg.DBName)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	newLogger := logger.New(
+		loggo.New(os.Stdout, "\r\n", loggo.LstdFlags),
+		logger.Config{
+			SlowThreshold: time.Second,
+			LogLevel:      logger.Silent,
+			Colorful:      true,
+		},
+	)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: newLogger})
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
-	log.Debug("Postgres connection successful")
+	log.Info("Postgres connection successful")
 	s.db = db
 }
 
@@ -59,23 +70,23 @@ func setLogConfigFromEnv() {
 
 func (s *Server) Run() {
 	srv := &http.Server{
-		Addr:         ":" + s.cfg.Port,
+		Addr:         ":" + s.cfg.ServerPort,
 		Handler:      s.router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
 
 	go func() {
-		log.Println("Starting the server on :8080")
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatal(err)
+		log.Info("Starting the server on :" + s.cfg.ServerPort)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("ListenAndServe error: ", err)
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down the server...")
+	log.Info("Shutting down the server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -83,5 +94,5 @@ func (s *Server) Run() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server shutdown error: %v", err)
 	}
-	log.Println("Server gracefully stopped")
+	log.Info("Server gracefully stopped")
 }

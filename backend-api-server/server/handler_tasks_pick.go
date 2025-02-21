@@ -10,6 +10,7 @@ import (
 )
 
 func (s *Server) handlePickTask(w http.ResponseWriter, r *http.Request) {
+	log.Debug("Executor tries picking a queued task")
 	tx := s.db.Begin()
 	if tx.Error != nil {
 		log.Error("failed to start transaction: " + tx.Error.Error())
@@ -48,7 +49,7 @@ func (s *Server) handlePickTask(w http.ResponseWriter, r *http.Request) {
 	task := taskData.toTask()
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	encoder := json.NewEncoder(w)
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(task); err != nil {

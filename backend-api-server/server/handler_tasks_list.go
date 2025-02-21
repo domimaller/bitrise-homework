@@ -8,6 +8,7 @@ import (
 )
 
 func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
+	log.Info("Listing tasks")
 	var tasksData []TaskData
 	if err := s.db.Find(&tasksData).Error; err != nil {
 		log.Error("failed to retrieve tasks: " + err.Error())

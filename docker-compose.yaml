@@ -9,11 +9,12 @@ services:
       - "3500:3500"
     environment:
       - SERVER_PORT=3500
+      - LOG_LEVEL=debug
       - DB_USER=postgres
       - DB_PASSWORD=password
-      - DB_HOST=db
+      - DB_HOST=localhost
       - DB_PORT=5432
-      - DB_NAME=your_database_name
+      - DB_NAME=postgres
     depends_on:
       - db
 
@@ -23,8 +24,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    environment:
+      - BACKEND_API_HOST=127.0.0.1
+      - BACKEND_API_PORT=3500
+      - LOG_LEVEL=debug
     depends_on:
-      - app1
+      - backend-api-server
 
   db:
     image: postgres:latest
@@ -32,7 +37,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: mydatabase
+      POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
