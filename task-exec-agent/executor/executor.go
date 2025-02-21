@@ -38,10 +38,10 @@ type Task struct {
 }
 
 type TaskResult struct {
-	Status   string  `json:"status"`
-	Stdout   *string `json:"stdout"`
-	Stderr   *string `json:"stderr"`
-	ExitCode *int    `json:"exit_code"`
+	Status   string `json:"status"`
+	Stdout   string `json:"stdout,omitempty"`
+	Stderr   string `json:"stderr,omitempty"`
+	ExitCode *int   `json:"exit_code"`
 }
 
 func (e *Executor) Run() {
@@ -84,7 +84,6 @@ func (e *Executor) Run() {
 }
 
 func executeCommand(command string) TaskResult {
-	var stdoutStr, stderrStr *string
 	exitCode := 0
 
 	cmd := exec.Command("sh", "-c", command)
@@ -94,19 +93,19 @@ func executeCommand(command string) TaskResult {
 	if err != nil {
 		errMsg := "failed to get stdout pipe: " + err.Error()
 		log.Error(errMsg)
-		return TaskResult{Status: "failed", Stderr: &errMsg, ExitCode: intPointer(1)}
+		return TaskResult{Status: "failed", Stderr: errMsg, ExitCode: intPointer(1)}
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		errMsg := "failed to get stderr pipe: " + err.Error()
 		log.Error(errMsg)
-		return TaskResult{Status: "failed", Stderr: &errMsg, ExitCode: intPointer(1)}
+		return TaskResult{Status: "failed", Stderr: errMsg, ExitCode: intPointer(1)}
 	}
 
 	if err := cmd.Start(); err != nil {
 		errMsg := "failed to start command: " + err.Error()
 		log.Error(errMsg)
-		return TaskResult{Status: "failed", Stderr: &errMsg, ExitCode: intPointer(1)}
+		return TaskResult{Status: "failed", Stderr: errMsg, ExitCode: intPointer(1)}
 	}
 
 	stdoutBytes, _ := io.ReadAll(stdoutPipe)
@@ -121,15 +120,10 @@ func executeCommand(command string) TaskResult {
 		}
 	}
 
-	sOut := string(stdoutBytes)
-	sErr := string(stderrBytes)
-	stdoutStr = &sOut
-	stderrStr = &sErr
-
 	taskResult := TaskResult{
 		Status:   "finished",
-		Stdout:   stdoutStr,
-		Stderr:   stderrStr,
+		Stdout:   string(stdoutBytes),
+		Stderr:   string(stderrBytes),
 		ExitCode: intPointer(exitCode),
 	}
 	log.Debugf("Task has successfuly executed: %+v", taskResult)

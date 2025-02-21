@@ -26,14 +26,19 @@ type Task struct {
 	ExitCode   *int       `json:"exit_code"`
 }
 
+type TaskCreate struct {
+	Command string `json:"command"`
+}
+
 func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	log.Info("Creating new task")
-	var task Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+	var taskCreate TaskCreate
+	if err := json.NewDecoder(r.Body).Decode(&taskCreate); err != nil {
 		log.Error("invalid request payload: " + err.Error())
 		http.Error(w, "invalid request payload", http.StatusBadRequest)
 		return
 	}
+	task := Task{Command: taskCreate.Command}
 	task.ID = uuid.New()
 	task.Status = statusQueued
 

@@ -32,13 +32,7 @@ func TestHandlerTaskCreateOK(t *testing.T) {
 	db, err := gorm.Open(dialector, &gorm.Config{})
 	assert.NoError(err)
 
-	mock.ExpectBegin()
-	insertQuery := regexp.QuoteMeta(`INSERT INTO "task_data"`)
-	mock.ExpectExec(insertQuery).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
-
-	// Init
+	// Create task OK
 	server := Server{db: db}
 
 	taskPayload := map[string]interface{}{
@@ -51,19 +45,63 @@ func TestHandlerTaskCreateOK(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Create task
+	mock.ExpectBegin()
+	insertQuery := regexp.QuoteMeta(`INSERT INTO "task_data"`)
+	mock.ExpectExec(insertQuery).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
 	server.handleCreateTask(w, req)
 
 	resp := w.Result()
 	assert.Equal(http.StatusCreated, resp.StatusCode)
 
-	// Validate
 	var returnedTask map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&returnedTask)
 	assert.NoError(err)
 	assert.Equal("test command", returnedTask["command"])
 	assert.Equal("queued", returnedTask["status"])
 	assert.Contains(returnedTask, "id")
+
+	// Create task - custom payload: only command can be given
+	taskCustomPayload := map[string]interface{}{
+		"id":          "my_custom_id",
+		"command":     "some command",
+		"started_at":  "2025-02-21T18:16:36.756116Z",
+		"finished_at": "2025-02-21T18:16:46.771742Z",
+		"status":      "finished",
+		"stdout":      "random",
+		"stderr":      "also",
+		"exit_code":   110,
+	}
+	payloadBytes, err = json.Marshal(taskCustomPayload)
+	assert.NoError(err)
+
+	req = httptest.NewRequest(http.MethodPost, "/tasks", bytes.NewReader(payloadBytes))
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(insertQuery).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	server.handleCreateTask(w, req)
+
+	resp = w.Result()
+	assert.Equal(http.StatusCreated, resp.StatusCode)
+
+	err = json.NewDecoder(resp.Body).Decode(&returnedTask)
+	assert.NoError(err)
+	assert.Equal("some command", returnedTask["command"])
+	assert.Equal("queued", returnedTask["status"])
+	assert.Contains(returnedTask, "id")
+	assert.NotEqual("my_custom_id", returnedTask["id"])
+	assert.Nil(returnedTask["started_at"])
+	assert.Nil(returnedTask["finished_at"])
+	assert.Nil(returnedTask["stdout"])
+	assert.Nil(returnedTask["stderr"])
+	assert.Nil(returnedTask["exit_code"])
 
 	err = mock.ExpectationsWereMet()
 	assert.NoError(err)
