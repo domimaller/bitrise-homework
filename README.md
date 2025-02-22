@@ -208,6 +208,9 @@ To stop the application and remove the persistent database data, run:
 
 ## Proposed improvements for production:
 
+### New features
+Expand user API with DELETE /tasks/<resource_id> for deleting queued but not processed/executed task, or just create another subpath for tasks such as POST /tasks/<resource_id>/abort to cancel a queued task. Second approach might be better as the existing resource could still inform user that the task was cancelled.
+
 ### Deployment and scaling
 
 #### Orchestration
