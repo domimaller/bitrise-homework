@@ -1,6 +1,6 @@
 # Task Executor Application
 
-This application consists of two main components that work together to manage and execute tasks. User can create task where shell commands can be given, those are executed by a simple executor in its shell.
+This application consists of two main components that work together to manage and execute tasks. User can create tasks via a restful API where shell commands can be given, those are executed by an executor agent in its container's shell.
 
 ## backend-api-server
   An API server where tasks can be created and their statuses retrieved. It exposes endpoints to create new tasks, query their status, and manage task execution.
@@ -17,7 +17,7 @@ This application consists of two main components that work together to manage an
 
 These endpoints are intended to be called only by executor agents. In production, access could be restricted using an ingress controller or firewall rules to prevent external access.
 
-- GET /tasks/pick: Allows an executor agent to pick a task for execution. If there are queued tasks available, this endpoint always returns the queued task that was created the earliest
+- GET /tasks/pick: Allows an executor agent to pick a task for execution. If there are queued tasks available, this endpoint always returns the queued task that was created the earliest.
 - POST /tasks/<resource_id>/finish: Called by an executor agent to update the state of an executed task.
 
 ## task-exec-agent
@@ -34,8 +34,8 @@ The application was designed considering two approaches:
 ## Prerequisites
 
 Before running the application, ensure that you have the following installed on your system:
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Docker](https://docs.docker.com/get-docker)
+- [Docker Compose](https://docs.docker.com/compose/install)
 
 ## Configuration
 
@@ -50,7 +50,7 @@ The application can be configured via environment variables. Important variables
 
 ## Docker Compose Setup
 
-The application is containerized using Docker Compose. Below is the provided `docker-compose.yaml` file:
+The application is containerized using Docker / Docker Compose. Below is the provided `docker-compose.yaml` file:
 
 ```yaml
 version: "3.9"
@@ -122,7 +122,7 @@ volumes:
 
 ### Explanation of Key Points:
 
-**Service Communication:** Services communicate using their service names (e.g., the API server connects to the database using DB_HOST=db).
+**Service Communication:** Services communicate using their service names (e.g. the API server connects to the database using DB_HOST=db).
 
 **Healthchecks:** Each service defines a healthcheck to ensure dependencies are ready before starting.
 
@@ -172,7 +172,7 @@ scale-agents:
 
 ## Running the Application
 
-1. Build and Start the Application:
+1. Build and start the Application:
 
 In the root directory of the source code, run:
 
@@ -184,9 +184,9 @@ This command builds the Docker images (if they are not built already) and starts
 
 ```make logs```
 
-Use this command to view real-time logs for all services. (You may want to include instructions on how to filter logs for a specific service if needed.)
+Use this command to view real-time logs for all services.
 
-3. Scaling Executor Agents:
+1. Scaling Executor Agents:
 
 To scale the number of executor agents, use:
 
@@ -206,32 +206,29 @@ To stop the application and remove the persistent database data, run:
 
 ```make down-prune-db```
 
-
-if task is picked by executor and then no finish is received by backend then it might suggest that executor is anomalious.
-
 ## Proposed improvements for production:
 
 ### Deployment and scaling
 
 #### Orchestration
-Deploy the services on container orchestration platform such Kurbernetes/Openshift or Docker Swarm. This would allow implementing further functionalities such as automated scaling, self-healing, load-balancing and easier rollouts, better handling of life-cycle management. Also, the improved deployment would allow to hide internal APIs from users, which would be a must to keep the application in consistent states.
+Deploy the services on container orchestration platform such Kurbernetes/Openshift or Docker Swarm. This would allow implementing further functionalities such as automated scaling, self-healing, load-balancing and easier rollouts, better handling of life-cycle management. Also, the improved deployment would allow to hide internal APIs from users, which would be a must to keep the application in consistent states avoiding unauthorized access to these APIs.
 
 #### Horizontal scaling
-The backend-api-server and task-exec-agent services could be scaled horizontally based on demand using container orchestration solutions such as HPA in Kubernetes. This could also reduce costs of required resources when demand is low, but otherwise server more users and execute more tasks seamlessly if demand is high.
+The backend-api-server and task-exec-agent services could be scaled horizontally based on demand using container orchestration solutions such as HPA in Kubernetes. This could also reduce costs of required resources when demand is low, but otherwise serve more users and execute more tasks seamlessly if demand is high.
 
 
 ### Database solution
-The current Docker Compose setup with PostgreSQL is sufficient for development and testing but in production more sophisticated solutions might be required. In production, utilizing managed PostgreSQL service (AWS, GCP) would be highly desired, or deploy the DB in a highly available clusters georedundantly with replication and automated backups.
+The current Docker Compose setup with PostgreSQL is sufficient for development and testing but in production more sophisticated solutions might be required. In production, utilizing managed PostgreSQL service (AWS, GCP) would be highly desired, or deploy the DB in highly available clusters georedundantly with replications and automated backups.
 
 Also, if the workload demands it would be wise to evaluate other database technologies that offer higher scalability or specific performance characteristics.
 
 ### Monitoring and logging
 
 #### Centralized logging
-Integrate a centralized logging solution that can aggregate logs from all services.
+Integrate a centralized logging solution that can aggregate logs from all services (for instance ELK stack: Fluentd for log collection and Elasticsearch for storing logs).
 
 #### Application performance monitoring
-Monitoring tools such as Prometheus could be easily integrated into the services. It would require a Prometheus service running where the predefined counter/gauges or other metrics could be stored from the services. Also, other open-source tools could be used such as Grafana to visualize these metrics and evaluate them.
+Monitoring tools such as Prometheus could be easily integrated into the services using Prometheus Go library. It would require a Prometheus service running where the predefined counter/gauges or other metrics could be stored from the services. Also, other open-source tools could be used such as Grafana to visualize these metrics and evaluate them.
 
 Healthchecks could be expanded to set up alerting for key metrics such as:
 - Task queue lengths and processing times
@@ -243,13 +240,13 @@ Healthchecks could be expanded to set up alerting for key metrics such as:
 Error handling could be enhanced in both backend service and executor agents. It could involve introducing retries, fallback mechanism or re-queuing tasks if an executions fails.
 
 #### Security
-Authentication and authorization could be implemented for API endpoints. On container orchestration platforms it is fairly easy to integrate gateways for ingress controllers where authentication/authorization plugins are highly available. Also, it could be considered to user TLS in inter-service communication if packets could reach public space. User API request for creating and reading tasks could potentially come from public space so TLS would be a must for ingress communication and responses and for egress in case backend would send out notifications or other kind of requests in an improved version.
+Authentication and authorization could be implemented for API endpoints. On container orchestration platforms it is possible to integrate gateways for ingress controllers where authentication/authorization plugins are fairly easy to set up. Also, it could be considered to use TLS in inter-service communication if packets could reach public space. User API request for creating and reading tasks could potentially come from public space so TLS would be a must for ingress communication and responses and for egress in case backend would send out notifications or other kind of requests in an improved version.
 
 #### Resilience
 Evaluate push-based models using message broker like RabbitMQ to further improve task distribution and real-time processing.
 
 #### Configuration management
-In current version there not so many configurations in services that could be changed but in future versions it might be desired to utilize a centralized configuration management tool where service configurations could be set. Using the app for specific set of tasks would also require a dedicated config set.
+In current version there are not so many configurations in the services that could be dynamically changed but in future versions it might be desired to utilize a centralized configuration management tool where service configurations could be set. Using the app for specific set of tasks would also require a dedicated config set.
 
 #### CI/CD solutions
 
@@ -259,7 +256,7 @@ In current version there not so many configurations in services that could be ch
 
 **Staging Deployment (vLAB)**: The pipeline could automatically deploy the application into a dedicated staging environment (e.g., a vLAB) using Docker Compose or Kubernetes. Integration tests and end-to-end tests could run in this environment to validate overall system behavior.
 
-**Production Deployment:** Once the integration tests pass and the build is validated, the solution would promote the build to production. Deployment strategies like blue/green or canary (like gradually rolling out the changes) releases could be used to minimize downtime and risk.
+**Production Deployment:** Once the integration tests pass and the build is validated, the solution would promote the build to production.
 
 **Monitoring and Feedback:** Throughout the pipeline, logs, metrics, and health checks could be collected and monitored, ensuring rapid detection and resolution of issues.
 
