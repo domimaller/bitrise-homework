@@ -1,0 +1,73 @@
+{
+	"info": {
+		"_postman_id": "ecc09688-e9e8-4425-9216-60a7482dd491",
+		"name": "Bitrise",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "29611596"
+	},
+	"item": [
+		{
+			"name": "Create task",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"command\": \"echo hello && sleep 10\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://127.0.0.1:3500/tasks"
+			},
+			"response": []
+		},
+		{
+			"name": "List tasks",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://127.0.0.1:8088/tasks"
+			},
+			"response": []
+		},
+		{
+			"name": "Get task",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://127.0.0.1:8088/tasks/id"
+			},
+			"response": []
+		},
+		{
+			"name": "Pick task",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://127.0.0.1:8088/tasks/pick"
+			},
+			"response": []
+		},
+		{
+			"name": "Finish task",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"status\": \"finished\",\n    \"stderr\": \"cannot find command echo\",\n    \"exit_code\": 1\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://127.0.0.1:3500/tasks/9fb83a05-6965-4635-a241-526a064d62ca/finish"
+			},
+			"response": []
+		}
+	]
+}
