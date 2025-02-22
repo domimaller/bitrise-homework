@@ -205,3 +205,78 @@ This stops and removes all running containers.
 To stop the application and remove the persistent database data, run:
 
 ```make down-prune-db```
+
+
+if task is picked by executor and then no finish is received by backend then it might suggest that executor is anomalious.
+
+## Proposed improvements for production:
+
+### Deployment and scaling
+
+#### Orchestration
+Deploy the services on container orchestration platform such Kurbernetes/Openshift or Docker Swarm. This would allow implementing further functionalities such as automated scaling, self-healing, load-balancing and easier rollouts, better handling of life-cycle management. Also, the improved deployment would allow to hide internal APIs from users, which would be a must to keep the application in consistent states.
+
+#### Horizontal scaling
+The backend-api-server and task-exec-agent services could be scaled horizontally based on demand using container orchestration solutions such as HPA in Kubernetes. This could also reduce costs of required resources when demand is low, but otherwise server more users and execute more tasks seamlessly if demand is high.
+
+
+### Database solution
+The current Docker Compose setup with PostgreSQL is sufficient for development and testing but in production more sophisticated solutions might be required. In production, utilizing managed PostgreSQL service (AWS, GCP) would be highly desired, or deploy the DB in a highly available clusters georedundantly with replication and automated backups.
+
+Also, if the workload demands it would be wise to evaluate other database technologies that offer higher scalability or specific performance characteristics.
+
+### Monitoring and logging
+
+#### Centralized logging
+Integrate a centralized logging solution that can aggregate logs from all services.
+
+#### Application performance monitoring
+Monitoring tools such as Prometheus could be easily integrated into the services. It would require a Prometheus service running where the predefined counter/gauges or other metrics could be stored from the services. Also, other open-source tools could be used such as Grafana to visualize these metrics and evaluate them.
+
+Healthchecks could be expanded to set up alerting for key metrics such as:
+- Task queue lengths and processing times
+- Instances where tasks are picked but never finished by an executor
+
+### Further changes and enchancements
+
+#### Error handling
+Error handling could be enhanced in both backend service and executor agents. It could involve introducing retries, fallback mechanism or re-queuing tasks if an executions fails.
+
+#### Security
+Authentication and authorization could be implemented for API endpoints. On container orchestration platforms it is fairly easy to integrate gateways for ingress controllers where authentication/authorization plugins are highly available. Also, it could be considered to user TLS in inter-service communication if packets could reach public space. User API request for creating and reading tasks could potentially come from public space so TLS would be a must for ingress communication and responses and for egress in case backend would send out notifications or other kind of requests in an improved version.
+
+#### Resilience
+Evaluate push-based models using message broker like RabbitMQ to further improve task distribution and real-time processing.
+
+#### Configuration management
+In current version there not so many configurations in services that could be changed but in future versions it might be desired to utilize a centralized configuration management tool where service configurations could be set. Using the app for specific set of tasks would also require a dedicated config set.
+
+#### CI/CD solutions
+
+**Automated Builds and Testing**: Every commit, especially when a new branch is created, could trigger a pipeline that builds Docker images for both the backend-api-server and task-exec-agent. The pipeline would run unit tests, linting, and static analysis to catch errors early.
+
+**Artifact Management:** After successful tests, the Docker images would be pushed to a container registry for versioning and traceability.
+
+**Staging Deployment (vLAB)**: The pipeline could automatically deploy the application into a dedicated staging environment (e.g., a vLAB) using Docker Compose or Kubernetes. Integration tests and end-to-end tests could run in this environment to validate overall system behavior.
+
+**Production Deployment:** Once the integration tests pass and the build is validated, the solution would promote the build to production. Deployment strategies like blue/green or canary (like gradually rolling out the changes) releases could be used to minimize downtime and risk.
+
+**Monitoring and Feedback:** Throughout the pipeline, logs, metrics, and health checks could be collected and monitored, ensuring rapid detection and resolution of issues.
+
+### Testing strategies
+
+#### Unit tests
+In current implementation the unit tests don't cover most of the code base which is highly desired to do so. More unit test would be needed with requirements such as 90% of each service's code base must be covered by unit tests.
+
+#### Integration tests
+Create tests that run the full Docker Compose stack to validate interraction between components. Test scaled agents how they execute tasks in integrated environment. Creating these tests might need utilizing testing frameworks such as Robot. These testcases could be run automatically as well in a CI solution.
+
+#### End-to-End tests
+Implement tests simulation user scenarios, such creating tasks and reading them in specific predefined ways.
+
+#### Load and performance testing
+Create load testing scenarios to understand how the system behaves under stress and identify bottlenecks.
+
+#### Security and peneration testing
+Perform regular security assessments. In this app case it would be highly desired as the commands given in tasks are executed in the agent shell and a malicious user could potentially penetrate the system if services allow specific harmful commands to be executed. Most probably commands would need extra validation as well before processing them.
+

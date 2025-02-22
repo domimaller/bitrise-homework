@@ -1,17 +1,19 @@
 .PHONY: run down down-prune-db logs scale-agents
 
+project ?= task-executor-app
+
 run:
-	docker-compose up -d --build
+	docker-compose -p $(project) up -d --build
 
 down:
-	docker-compose down
+	docker-compose -p $(project) down
 
 down-prune-db:
-	docker-compose down -v
+	docker-compose -p $(project) down -v
 
 logs:
-	docker-compose logs -f
+	docker-compose -p $(project) logs -f
 
 scale-agents:
-	@echo "Scaling task-exec-agent to $(num) instance(s)..."
-	docker-compose up -d --scale task-exec-agent=$(num)
+	@echo "Scaling task-exec-agent to $(num) instance(s) in project $(project)..."
+	docker-compose -p $(project) up -d --scale task-exec-agent=$(num)
